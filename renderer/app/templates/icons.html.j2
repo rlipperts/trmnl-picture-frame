@@ -1,0 +1,105 @@
+{#
+  Inline SVG icon set.
+
+  Deliberately hand-drawn rather than pulled from an icon font: the container
+  then needs no network at render time, and bold geometric strokes survive a
+  1-bit threshold far better than the thin, detailed curves of a typical icon
+  font. Everything is stroked in currentColor with no fills, so nothing turns
+  into a grey blob when the image is flattened to black and white.
+#}
+
+{% macro icon(name, size=28, stroke=2) -%}
+<svg class="icon" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24"
+     fill="none" stroke="currentColor" stroke-width="{{ stroke }}"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {{- shape(name) -}}
+</svg>
+{%- endmacro %}
+
+
+{% macro shape(name) -%}
+{%- if name == "sun" -%}
+  <circle cx="12" cy="12" r="4.5"/>
+  <path d="M12 1.5v2.5M12 20v2.5M1.5 12h2.5M20 12h2.5
+           M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M19.4 4.6l-1.8 1.8M6.4 17.6l-1.8 1.8"/>
+
+{%- elif name == "moon" -%}
+  <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+
+{%- elif name == "cloud" -%}
+  <path d="M6.5 19a4.5 4.5 0 0 1 0-9 6 6 0 0 1 11.6 1.6A3.7 3.7 0 0 1 17.5 19z"/>
+
+{%- elif name == "partly-cloudy" -%}
+  <circle cx="8" cy="7.5" r="3"/>
+  <path d="M8 1.8v1.8M2.3 7.5h1.8M3.9 3.4l1.3 1.3M12.1 3.4l-1.3 1.3"/>
+  <path d="M10 20.5a3.75 3.75 0 0 1 0-7.5 5 5 0 0 1 9.7 1.3 3.1 3.1 0 0 1-.5 6.2z"/>
+
+{%- elif name == "partly-cloudy-night" -%}
+  <path d="M13 8.2A4.6 4.6 0 0 1 7.5 2.7a4.6 4.6 0 1 0 5.5 5.5z"/>
+  <path d="M10 20.5a3.75 3.75 0 0 1 0-7.5 5 5 0 0 1 9.7 1.3 3.1 3.1 0 0 1-.5 6.2z"/>
+
+{%- elif name == "rain" -%}
+  <path d="M7 14.5a4 4 0 0 1 0-8 5.4 5.4 0 0 1 10.4 1.4A3.3 3.3 0 0 1 17.4 14.5z"/>
+  <path d="M8.5 18v3M12 18.5v3.5M15.5 18v3"/>
+
+{%- elif name == "sleet" -%}
+  <path d="M7 14.5a4 4 0 0 1 0-8 5.4 5.4 0 0 1 10.4 1.4A3.3 3.3 0 0 1 17.4 14.5z"/>
+  <path d="M9 18.5v2.5M15 18.5v2.5"/>
+  <path d="M12 18.5v1M12 21v1"/>
+
+{%- elif name == "snow" -%}
+  <path d="M7 14.5a4 4 0 0 1 0-8 5.4 5.4 0 0 1 10.4 1.4A3.3 3.3 0 0 1 17.4 14.5z"/>
+  <path d="M8.5 18.2v3M7.2 18.9l2.6 1.6M9.8 18.9l-2.6 1.6"/>
+  <path d="M15.5 18.2v3M14.2 18.9l2.6 1.6M16.8 18.9l-2.6 1.6"/>
+
+{%- elif name == "hail" -%}
+  <path d="M7 14.5a4 4 0 0 1 0-8 5.4 5.4 0 0 1 10.4 1.4A3.3 3.3 0 0 1 17.4 14.5z"/>
+  <circle cx="9" cy="19.5" r="1.2"/>
+  <circle cx="15" cy="19.5" r="1.2"/>
+
+{%- elif name == "thunderstorm" -%}
+  <path d="M7 14a4 4 0 0 1 0-8 5.4 5.4 0 0 1 10.4 1.4A3.3 3.3 0 0 1 17.4 14z"/>
+  <path d="M13 15.5l-3 4h3l-1.5 3.5"/>
+
+{%- elif name == "fog" -%}
+  <path d="M6.5 13.5a4.2 4.2 0 0 1 0-8.4 5.6 5.6 0 0 1 10.8 1.5A3.4 3.4 0 0 1 17.2 13.5z"/>
+  <path d="M4 17h16M6.5 20.5h11"/>
+
+{%- elif name == "wind" -%}
+  <path d="M3 8.5h11a3 3 0 1 0-3-3"/>
+  <path d="M3 15.5h8a3 3 0 1 1-3 3"/>
+  <path d="M17 15.5h4"/>
+
+{%- elif name == "bulb" -%}
+  <path d="M9 17.5a6 6 0 1 1 6 0v1.5H9z"/>
+  <path d="M9.5 21.5h5"/>
+
+{%- elif name == "window" -%}
+  <rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/>
+  <path d="M12 3.5v17M3.5 12h17"/>
+
+{%- elif name == "door" -%}
+  <path d="M5.5 21V4a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v17z"/>
+  <path d="M4 21h16"/>
+  <circle cx="15" cy="12.5" r="1"/>
+
+{%- elif name == "droplet" -%}
+  <path d="M12 3.5l5 6.5a5.6 5.6 0 1 1-10 0z"/>
+
+{%- elif name == "thermometer" -%}
+  <path d="M13.5 14.2V4.5a1.75 1.75 0 1 0-3.5 0v9.7a3.6 3.6 0 1 0 3.5 0z"/>
+
+{%- elif name == "bike" -%}
+  <circle cx="5.5" cy="17.5" r="3.5"/>
+  <circle cx="18.5" cy="17.5" r="3.5"/>
+  <path d="M5.5 17.5l4-9h5l4 9M9.5 8.5h-2M13 8.5l3.5 9"/>
+
+{%- elif name == "gust" -%}
+  <path d="M2.5 9h9.5a2.6 2.6 0 1 0-2.6-2.6"/>
+  <path d="M2.5 15h6.5a2.6 2.6 0 1 1-2.6 2.6"/>
+  <path d="M14.5 15h6.5M14.5 9h6.5"/>
+
+{%- else -%}
+  <circle cx="12" cy="12" r="4"/>
+{%- endif -%}
+{%- endmacro %}

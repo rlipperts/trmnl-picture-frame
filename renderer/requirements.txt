@@ -1,0 +1,11 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+jinja2==3.1.5
+pillow==11.1.0
+playwright==1.49.1
+pydantic==2.10.5
+pyyaml==6.0.2
+# Ship the timezone database rather than trusting the base image to carry one:
+# ZoneInfo falls back to the system tzdata, and a slim image may have none.
+tzdata==2024.2

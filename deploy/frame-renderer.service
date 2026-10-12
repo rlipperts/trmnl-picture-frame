@@ -1,0 +1,41 @@
+[Unit]
+Description=E-ink frame renderer (HTML/CSS -> 1-bit BMP)
+Documentation=https://github.com/rlipperts/trmnl-picture-frame
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=frame
+Group=frame
+WorkingDirectory=/opt/frame-renderer/renderer
+
+# The config lives outside the checkout so `git pull` never touches it, and
+# the token lives outside the config so it is not in a file you would paste
+# into a chat window.
+Environment=FRAME_CONFIG=/etc/frame-renderer/config.yaml
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+# Chromium scatters caches and profile directories under $HOME. Pointing HOME
+# at the private /tmp below keeps all of that inside the unit's own tmpfs,
+# which is discarded when the service stops.
+Environment=HOME=/tmp
+Environment=XDG_CACHE_HOME=/tmp
+EnvironmentFile=-/etc/frame-renderer/env
+
+# 0.0.0.0, not 127.0.0.1: the whole point is that a device on the LAN fetches
+# from here.
+ExecStart=/opt/frame-renderer/renderer/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8080
+
+Restart=always
+RestartSec=5
+
+# Chromium is a big, complicated thing to be running on your network. It has no
+# business writing anywhere but its own temp space.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/frame-renderer/renderer
+
+[Install]
+WantedBy=multi-user.target

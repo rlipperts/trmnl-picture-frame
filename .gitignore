@@ -1,0 +1,19 @@
+# Python venvs and bytecode
+.venv/
+venv/
+renderer/.venv-test/
+__pycache__/
+*.pyc
+
+# Renderer runtime config: holds coordinates and possibly an HA token
+renderer/config/
+renderer/.env
+
+# ESPHome secrets and build output
+esphome/secrets.yaml
+esphome/.esphome/
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+.vscode/

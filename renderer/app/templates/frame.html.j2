@@ -1,0 +1,108 @@
+{% extends "base.html.j2" %}
+{% import "icons.html.j2" as ic %}
+
+{% block body %}
+<div class="frame">
+
+  <div class="top">
+    <section class="panel panel-now">
+      <h2>Now{% if view.now.station %} &middot; {{ view.now.station }}{% endif %}</h2>
+      <div class="now">
+        {{ ic.icon(view.now.icon, size=64, stroke=1.6) }}
+        <div class="now-temp">{{ view.now.temperature }}<sup>&deg;C</sup></div>
+        <div class="now-meta">
+          <div class="now-condition">{{ view.now.condition }}</div>
+          <div class="row">
+            {{ ic.icon("gust", size=18, stroke=2) }}
+            <span>{{ view.now.wind }} km/h{% if view.now.gust %}, gusts {{ view.now.gust }}{% endif %}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel panel-home">
+      <h2>Home</h2>
+      <div class="status">
+        {% for item in view.status %}
+        <div class="status-row {{ 'active' if item.active }} {{ 'stale' if not item.available }}">
+          {{ ic.icon(item.icon, size=20, stroke=2) }}
+          <span class="label">{{ item.label }}</span>
+          <span class="value">{{ item.text }}</span>
+        </div>
+        {% else %}
+        <div class="status-row stale">
+          <span class="label">No entities configured</span>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="outing">
+    <div class="outing-when">
+      <span class="title">{{ view.outing.title }}</span>
+      <span class="span">{{ view.outing.span }}</span>
+    </div>
+    <div class="verdicts">
+      {% for chip in view.outing.chips %}
+      <div class="chip {{ 'alert' if chip.alert }}">
+        {{ ic.icon(chip.icon, size=22, stroke=2) }}
+        <span>{{ chip.text }}</span>
+        {% if chip.sub %}<span class="sub">{{ chip.sub }}</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="strip">
+    <h2>
+      Next {{ view.strip.hours | length }} h &middot; rain chance &amp; temperature
+      {%- if view.strip.temp_min is not none %}
+      &middot; {{ view.strip.temp_min }}&deg; to {{ view.strip.temp_max }}&deg;
+      {%- endif %}
+    </h2>
+
+    <div class="plot">
+      <div class="bars">
+        {% for hour in view.strip.hours %}
+        <div class="bar-cell">
+          <div class="bar-pop">{% if hour.show_pct %}{{ hour.rain_pct }}{% endif %}</div>
+          {% if hour.bar_pct > 0 %}
+          <div class="bar {{ 'wet' if hour.wet }}" style="height: {{ hour.bar_pct }}%"></div>
+          {% else %}
+          <div class="bar-zero"></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if view.strip.temp_points %}
+      {# Stretched to the container so integer x coordinates land on the bar
+         columns at any width; the white pass underneath keeps the line visible
+         where it crosses a solid black bar. #}
+      <svg class="temp-line" viewBox="0 0 {{ view.strip.hours | length }} 100"
+           preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="{{ view.strip.temp_points }}" fill="none" stroke="#fff"
+                  stroke-width="6" stroke-linejoin="round" stroke-linecap="round"
+                  vector-effect="non-scaling-stroke" />
+        <polyline points="{{ view.strip.temp_points }}" fill="none" stroke="#000"
+                  stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+                  vector-effect="non-scaling-stroke" />
+      </svg>
+      {% endif %}
+    </div>
+
+    <div class="hours">
+      {% for hour in view.strip.hours %}
+      <span class="{{ 'in-window' if hour.in_window }}">{{ hour.label }}</span>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="foot">
+    <span>{{ view.footer.location }}</span>
+    <span>{{ view.footer.attribution }}</span>
+    <span>{{ view.footer.updated }}</span>
+  </div>
+</div>
+{% endblock %}

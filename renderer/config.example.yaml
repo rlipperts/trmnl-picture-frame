@@ -1,0 +1,94 @@
+# Copy to config/config.yaml and edit. The container re-reads this file on every
+# request, so you can tweak it and just refresh the browser.
+
+display:
+  # The panel itself, always landscape: 800x480 is what the driver drives.
+  width: 800
+  height: 480
+
+  # How far clockwise the panel is mounted from that. 90 or 270 composes the
+  # layout portrait (480x800) and rotates the device image back on the way out,
+  # so the ESP32 never learns the frame is sideways. If the picture comes out
+  # upside down on the wall, swap 90 for 270.
+  rotate: 0
+
+  # The picture frame's mat hides the outer edge of the panel. Measure these
+  # once with /calibrate (see README) and put the hidden pixel counts here --
+  # the layout is then inset by this much so nothing important lands underneath.
+  safe_area:
+    top: 0
+    right: 0
+    bottom: 0
+    left: 0
+
+  # threshold -> hard black/white cut, keeps text razor sharp (recommended)
+  # floyd     -> Floyd-Steinberg dithering, use only for photo-ish content
+  dither: threshold
+  threshold: 128
+
+location:
+  # Bright Sky picks the nearest DWD station to these coordinates.
+  # Find yours at https://www.latlong.net -- 4 decimals is plenty.
+  latitude: 49.8728
+  longitude: 8.6512
+  timezone: Europe/Berlin
+  label: Darmstadt
+
+outings:
+  # Every time of day you are outside and want a rain verdict for it, local
+  # time. The panel shows whichever window is next; once the last one has
+  # passed it rolls to the first of tomorrow, labelled as such. Order does not
+  # matter -- they are sorted by start time.
+  windows:
+    - { name: "Ride in",   start: "07:00", end: "09:00" }
+    - { name: "Canteen",   start: "11:00", end: "12:00" }
+    - { name: "Ride home", start: "17:00", end: "19:00" }
+
+  # The verdict is computed over the chosen window only: the worst hour in it
+  # decides, not the day's average.
+  #
+  # Precipitation probability (%) at or above which the rain-jacket chip fires.
+  rain_jacket_pop: 30
+  # Precipitation total (mm/h) that upgrades the chip to "proper rain".
+  heavy_rain_mm: 1.0
+
+forecast:
+  # Length of the hourly strip along the bottom.
+  hours: 14
+
+home_assistant:
+  # Your Home Assistant, as reached from the renderer. Example value.
+  base_url: http://192.168.1.10:8123
+  # Long-lived access token. Prefer the HA_TOKEN env var over putting it here.
+  token: null
+  timeout_seconds: 8
+
+# Each row is one line in the "HOME" panel. `on_states` lists the states that
+# count as the alert condition; anything else renders as the calm state.
+status:
+  - entity: light.living_room
+    label: Living room
+    icon: bulb
+    on_states: [ "on" ]
+    on_text: "ON"
+    off_text: "off"
+
+  - entity: binary_sensor.kitchen_window
+    label: Kitchen window
+    icon: window
+    on_states: [ "on" ]
+    on_text: "OPEN"
+    off_text: "closed"
+
+  - entity: binary_sensor.front_door
+    label: Front door
+    icon: door
+    on_states: [ "on" ]
+    on_text: "OPEN"
+    off_text: "closed"
+
+cache:
+  # Seconds to reuse fetched data. Keeps browser refreshes from hammering
+  # DWD/Bright Sky and Home Assistant while you iterate on the layout.
+  weather_seconds: 600
+  states_seconds: 20

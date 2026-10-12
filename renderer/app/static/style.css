@@ -1,0 +1,489 @@
+/* One bit per pixel, on a panel that is 800x480 whichever way it is hung.
+ * See the portrait block at the bottom: a frame mounted on its side gets a
+ * different layout, not a squeezed one.
+ *
+ * Two rules drive every choice in here:
+ *
+ *  1. No greys. The image is flattened with a hard threshold, so a mid-grey is
+ *     a coin flip -- it lands black on one refresh and white on the next. Depth
+ *     comes from inversion (black block, white text) and from rule weight, not
+ *     from tint. Where a fill is genuinely wanted, it is a hatch pattern drawn
+ *     at 90 degrees so it stays on the pixel grid.
+ *
+ *  2. Nothing is positioned by coordinate. Grid and flex place everything, so
+ *     changing the safe-area inset reflows the layout instead of pushing
+ *     content off the panel.
+ */
+
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --rule: 2px solid #000;
+  --rule-hair: 1px solid #000;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: var(--panel-width, 800px);
+  height: var(--panel-height, 480px);
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: "DejaVu Sans", "Liberation Sans", sans-serif;
+  /* No antialiasing at text sizes: grey edge pixels are what makes small type
+   * look furry once thresholded. The one big number below opts back in. */
+  -webkit-font-smoothing: none;
+  font-weight: 700;
+}
+
+.frame {
+  width: 100%;
+  height: 100%;
+  /* The picture-frame mat hides this much of the panel. */
+  padding: var(--safe-top, 0) var(--safe-right, 0) var(--safe-bottom, 0)
+    var(--safe-left, 0);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+}
+
+.icon {
+  display: block;
+  flex: none;
+}
+
+/* ---------------------------------------------------------------- header -- */
+
+.top {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 14px;
+  align-items: stretch;
+}
+
+.panel {
+  border: var(--rule);
+  padding: 8px 12px 10px;
+  min-width: 0;
+}
+
+.panel > h2 {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-bottom: var(--rule-hair);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.now {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.now-temp {
+  font-size: 72px;
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  /* Large glyphs have enough mass that greyscale AA thresholds cleanly, and
+   * the curves look far better for it. */
+  -webkit-font-smoothing: antialiased;
+}
+
+.now-temp sup {
+  font-size: 30px;
+  vertical-align: top;
+  line-height: 1;
+}
+
+.now-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  min-width: 0;
+}
+
+.now-meta .row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.now-condition {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+}
+
+/* ---------------------------------------------------------------- status -- */
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  padding: 3px 5px;
+}
+
+/* An entity in its alert state inverts: the eye finds a solid black bar across
+ * the room, which is the entire point of a window-open indicator. */
+.status-row.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.status-row .label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-row .value {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+/* Unreachable entity. Marked on the leading edge rather than with a background
+ * hatch: a pattern running behind the label makes the one row you need to read
+ * the one row you cannot. */
+.status-row.stale {
+  border-left: 6px double #000;
+  padding-left: 8px;
+}
+
+/* ---------------------------------------------------------------- outing -- */
+
+.outing {
+  border: var(--rule);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
+}
+
+.outing-when {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.outing-when .title {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.outing-when .span {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 13px;
+}
+
+.verdicts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: var(--rule);
+  padding: 5px 10px;
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+/* The one thing you came to the frame to find out gets the inverted chip. */
+.chip.alert {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.chip .sub {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------- hourly -- */
+
+.strip {
+  border: var(--rule);
+  padding: 6px 10px 4px;
+  display: grid;
+  grid-template-rows: 14px 1fr auto;
+  gap: 2px;
+  min-height: 0;
+}
+
+.strip h2 {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.plot {
+  position: relative;
+  min-height: 0;
+}
+
+/* Stretched to the container with preserveAspectRatio="none", so the polyline's
+ * integer x coordinates line up with the bar columns below at any width. No
+ * pixel arithmetic on our side. */
+.temp-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.bars {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: end;
+  gap: 3px;
+}
+
+.bar-cell {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.bar {
+  background: var(--ink);
+  /* A 2% chance still earns a visible sliver, so "almost none" and "none at
+   * all" are distinguishable at a glance. */
+  min-height: 2px;
+}
+
+/* Hours with measurable rain, not merely a chance of it, get a hatched cap so
+ * "60% of a drizzle" and "60% of a soaking" are not the same picture. */
+.bar.wet {
+  background-image: repeating-linear-gradient(
+    90deg,
+    #fff 0 1px,
+    #000 1px 3px
+  );
+}
+
+.bar-zero {
+  border-bottom: var(--rule-hair);
+}
+
+.bar-pop {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 10px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.hours {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  border-top: var(--rule-hair);
+  padding-top: 2px;
+}
+
+.hours span {
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Column falling inside the outing window: marked by weight, not by tint. */
+.hours span.in-window {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------------------------------------------------------------- footer -- */
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-family: "DejaVu Sans Mono", monospace;
+}
+
+/* ------------------------------------------------------------- calibrate -- */
+
+.ruler {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.ruler svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ----------------------------------------------------------------- error -- */
+
+.error {
+  padding: 24px;
+  font-family: "DejaVu Sans Mono", monospace;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.error h1 {
+  font-size: 22px;
+  margin-bottom: 12px;
+  border-bottom: var(--rule);
+  padding-bottom: 6px;
+}
+
+.error pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+}
+
+/* In the browser, show where the panel ends and where the mat hides it.
+ * Added by /?preview=1 only -- never present in what the device fetches. */
+body.preview {
+  outline: 1px dashed #999;
+}
+
+body.preview .frame {
+  background-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.08) 0 var(--safe-top, 0),
+      transparent var(--safe-top, 0)
+    ),
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.08) 0 var(--safe-bottom, 0),
+      transparent var(--safe-bottom, 0)
+    ),
+    linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.08) 0 var(--safe-left, 0),
+      transparent var(--safe-left, 0)
+    ),
+    linear-gradient(
+      to left,
+      rgba(0, 0, 0, 0.08) 0 var(--safe-right, 0),
+      transparent var(--safe-right, 0)
+    );
+}
+
+/* -------------------------------------------------------------- portrait -- */
+
+/* The panel is landscape hardware; the picture frame may be hung either way.
+ * When it is portrait the renderer composes at 480x800 and rotates the device
+ * image on the way out, so everything below is a genuine layout change rather
+ * than a squeezed version of the wide one -- two columns of 240px would make
+ * the temperature and the entity list fight each other for the same inches.
+ *
+ * Keyed on the aspect ratio rather than a class: the viewport already carries
+ * the answer, and the preview in a browser then behaves the same way. */
+@media (max-aspect-ratio: 1 / 1) {
+  /* Dissolve the two-column header so its panels become rows of the frame
+   * itself. Order is then free, and the rain verdict -- the reason the frame
+   * exists -- climbs to just under the temperature. */
+  .top {
+    display: contents;
+  }
+
+  /* Home is sized to its rows; the slack goes to the strip. Three entities
+   * plus half a panel of white space reads as a mistake, whereas a taller
+   * curve is simply a better-drawn curve. */
+  .frame {
+    grid-template-rows: auto auto auto 1fr auto;
+  }
+
+  .panel-now {
+    order: 1;
+  }
+  .outing {
+    order: 2;
+  }
+  .panel-home {
+    order: 3;
+  }
+  .strip {
+    order: 4;
+  }
+  .foot {
+    order: 5;
+  }
+
+  /* 480px of width is plenty for the big figure, and the station name no
+   * longer has to share its line with a second panel. */
+  .now-temp {
+    font-size: 88px;
+  }
+
+  .now {
+    gap: 20px;
+  }
+
+  /* The entity list inherits the height the strip gives up. Bigger rows are
+   * the point of that space: this is the part read from across the room. */
+  .panel-home {
+    min-height: 0;
+  }
+
+  .status {
+    gap: 8px;
+  }
+
+  .status-row {
+    font-size: 18px;
+    padding: 6px 7px;
+  }
+
+  .status-row .value {
+    font-size: 15px;
+  }
+
+  /* Fourteen columns in 480px is 30px each: fine for two digits, tight for a
+   * percentage above every bar. */
+  .bar-pop {
+    font-size: 9px;
+  }
+
+  .hours span {
+    font-size: 11px;
+  }
+}

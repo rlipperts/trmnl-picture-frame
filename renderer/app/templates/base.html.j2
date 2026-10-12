@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ title | default("Frame") }}</title>
+    <style>
+      /* The stylesheet is inlined rather than linked so that the exact same
+       * document can be handed to Playwright via set_content(), with no
+       * network fetch to resolve and no chance of the screenshot racing a
+       * stylesheet load. The browser preview is then byte-identical to what
+       * gets photographed. */
+      {{ inline_css }}
+    </style>
+    <style>
+      /* Panel geometry and the frame's hidden margins reach the stylesheet as
+       * custom properties, so config.yaml is the single source of truth for
+       * both the screenshot viewport and the layout inset. */
+      :root {
+        --panel-width: {{ display.render_width }}px;
+        --panel-height: {{ display.render_height }}px;
+        --safe-top: {{ display.safe_area.top }}px;
+        --safe-right: {{ display.safe_area.right }}px;
+        --safe-bottom: {{ display.safe_area.bottom }}px;
+        --safe-left: {{ display.safe_area.left }}px;
+      }
+    </style>
+  </head>
+  <body class="{{ 'preview' if preview else '' }}">
+    {% block body %}{% endblock %}
+  </body>
+</html>

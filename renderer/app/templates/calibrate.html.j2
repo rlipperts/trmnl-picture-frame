@@ -1,0 +1,88 @@
+{% extends "base.html.j2" %}
+
+{% block body %}
+{# Deliberately NOT inset by the safe area -- this page is how the safe area
+   gets measured in the first place. Full bleed, 1:1 pixels. #}
+<div class="ruler">
+  <svg viewBox="0 0 {{ display.render_width }} {{ display.render_height }}"
+       width="{{ display.render_width }}" height="{{ display.render_height }}"
+       xmlns="http://www.w3.org/2000/svg"
+       font-family="DejaVu Sans Mono, monospace" font-weight="bold"
+       fill="#000" stroke="#000">
+
+    <rect x="0" y="0" width="{{ display.render_width }}" height="{{ display.render_height }}"
+          fill="#fff" stroke="none" />
+
+    {# Inset rings every 10 px. Read off the innermost ring the picture frame
+       still hides, and put that number in config.yaml -- one ring per edge. #}
+    {% for inset in rings %}
+    <rect x="{{ inset }}" y="{{ inset }}"
+          width="{{ display.render_width - 2 * inset }}"
+          height="{{ display.render_height - 2 * inset }}"
+          fill="none" stroke-width="{{ 2 if inset % 50 == 0 else 1 }}" />
+    {# Every ring is labelled, in both the top-left and bottom-right corners.
+       The labels stagger diagonally, so counting is never necessary -- you read
+       the number off the innermost ring you can still see. #}
+    <text x="{{ inset + 4 }}" y="{{ inset + 13 }}" font-size="11" stroke="none">{{ inset }}</text>
+    <text x="{{ display.render_width - inset - 4 }}" y="{{ display.render_height - inset - 5 }}"
+          font-size="11" text-anchor="end" stroke="none">{{ inset }}</text>
+    {% endfor %}
+
+    {# Edge tick ladders: coarse ticks every 20 px, labelled every 100 px. #}
+    {% for x in range(0, display.render_width + 1, 20) %}
+    <line x1="{{ x }}" y1="0" x2="{{ x }}"
+          y2="{{ 22 if x % 100 == 0 else 12 }}" stroke-width="1" />
+    <line x1="{{ x }}" y1="{{ display.render_height }}" x2="{{ x }}"
+          y2="{{ display.render_height - (22 if x % 100 == 0 else 12) }}" stroke-width="1" />
+    {% if x % 100 == 0 and 0 < x < display.render_width %}
+    <text x="{{ x + 3 }}" y="{{ 34 }}" font-size="13" stroke="none">{{ x }}</text>
+    {% endif %}
+    {% endfor %}
+
+    {% for y in range(0, display.render_height + 1, 20) %}
+    <line x1="0" y1="{{ y }}" x2="{{ 22 if y % 100 == 0 else 12 }}"
+          y2="{{ y }}" stroke-width="1" />
+    <line x1="{{ display.render_width }}" y1="{{ y }}"
+          x2="{{ display.render_width - (22 if y % 100 == 0 else 12) }}"
+          y2="{{ y }}" stroke-width="1" />
+    {% if y % 100 == 0 and 0 < y < display.render_height %}
+    <text x="{{ 26 }}" y="{{ y + 5 }}" font-size="13" stroke="none">{{ y }}</text>
+    {% endif %}
+    {% endfor %}
+
+    {# Corner crosshairs: if a whole corner is missing, the mat overlaps more
+       than the rings can show and the frame needs re-seating. #}
+    {% set c = 26 %}
+    <g stroke-width="3">
+      <path d="M0 0 l{{ c }} 0 M0 0 l0 {{ c }}" />
+      <path d="M{{ display.render_width }} 0 l-{{ c }} 0 M{{ display.render_width }} 0 l0 {{ c }}" />
+      <path d="M0 {{ display.render_height }} l{{ c }} 0 M0 {{ display.render_height }} l0 -{{ c }}" />
+      <path d="M{{ display.render_width }} {{ display.render_height }} l-{{ c }} 0
+               M{{ display.render_width }} {{ display.render_height }} l0 -{{ c }}" />
+    </g>
+
+    <g stroke="none" text-anchor="middle">
+      <text x="{{ display.render_width / 2 }}" y="{{ display.render_height / 2 - 34 }}" font-size="26">
+        CALIBRATION
+      </text>
+      <text x="{{ display.render_width / 2 }}" y="{{ display.render_height / 2 - 6 }}" font-size="15">
+        {{ display.render_width }} x {{ display.render_height }} &#183; rings every 10 px
+      </text>
+      {# Two lines, not one: the sentence is wider than a 480 px portrait page
+         and SVG text does not wrap. #}
+      <text x="{{ display.render_width / 2 }}" y="{{ display.render_height / 2 + 22 }}" font-size="15">
+        Innermost hidden ring per edge
+      </text>
+      <text x="{{ display.render_width / 2 }}" y="{{ display.render_height / 2 + 44 }}" font-size="15">
+        -&gt; safe_area in config.yaml
+      </text>
+      <text x="{{ display.render_width / 2 }}" y="{{ display.render_height / 2 + 70 }}" font-size="13">
+        current: top {{ display.safe_area.top }} &#183;
+        right {{ display.safe_area.right }} &#183;
+        bottom {{ display.safe_area.bottom }} &#183;
+        left {{ display.safe_area.left }}
+      </text>
+    </g>
+  </svg>
+</div>
+{% endblock %}

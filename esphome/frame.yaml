@@ -1,0 +1,194 @@
+# ESP32-C3 Super Mini + Waveshare 7.5" V2 (800x480, 1-bit).
+#
+# The device is deliberately dumb: it downloads one 1-bit BMP from the renderer
+# and blits it. No layout, no fonts, no drawing primitives, no deep sleep. Every
+# design decision lives in the renderer's HTML/CSS, where it can be iterated on
+# in a browser instead of over a flash cable.
+#
+# Secrets used (put them in secrets.yaml next to this file):
+#   wifi_ssid, wifi_password, ap_password, api_key, ota_password
+
+substitutions:
+  name: eink-frame
+  friendly_name: E-ink Frame
+  # The renderer. Plain HTTP on the LAN -- no TLS handshake to fit in 400 kB.
+  # Set this to your own renderer before flashing. Give that host a DHCP
+  # reservation, or this line rots on its next lease.
+  frame_url: "http://192.168.1.50:8080/frame.bmp"
+  # How often the device *asks*, not how often the panel repaints -- the
+  # renderer answers 304 when nothing changed and the panel is left alone.
+  # Waveshare asks for at least 180s between refreshes; this is the polling
+  # floor that guarantees it even if every single poll came back changed.
+  refresh_interval: 300s
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+  # The Super Mini's USB port is the C3's native USB-CDC, not a UART bridge.
+  hardware_uart: USB_SERIAL_JTAG
+
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  # Keeping the radio up costs power we are not paying for -- the frame runs
+  # from USB -- and buys a device that is always reachable for OTA.
+  power_save_mode: none
+  ap:
+    ssid: ${name}-setup
+    password: !secret ap_password
+
+captive_portal:
+
+# Required dependency of the online_image platform below.
+http_request:
+  useragent: esphome/${name}
+  timeout: 20s
+  # 48 kB over the LAN; the default watchdog window is ample.
+  verify_ssl: false
+
+spi:
+  clk_pin: GPIO0
+  mosi_pin: GPIO1
+
+image:
+  - platform: online_image
+    id: frame_image
+    url: ${frame_url}
+    # 1-bit BMP, not PNG. The C3 has no PSRAM, and ESPHome's own docs only say
+    # online_image "might work" without it -- PNG decoding at 800x480 is where
+    # that runs out. A 1-bit BMP is 800 x 480 / 8 = 48 kB of pixels that map
+    # essentially straight onto the panel buffer.
+    format: BMP
+    type: BINARY
+    transparency: opaque
+    update_interval: ${refresh_interval}
+    # Smaller than the 65536 default: the download buffer is the largest single
+    # allocation here, and on a no-PSRAM C3 the headroom matters more than the
+    # handful of extra chunks.
+    buffer_size: 30000
+    on_download_finished:
+      # `cached` is true when the renderer answered the conditional request
+      # with 304, i.e. the picture is byte-identical to the one already on the
+      # panel. Repainting then would cost a four-second full refresh and one of
+      # the panel's ~1,000,000 specified refreshes to draw exactly what is
+      # already there. Overnight that is most of the polls.
+      - if:
+          condition:
+            lambda: 'return !cached;'
+          then:
+            - logger.log: "Frame changed, refreshing panel"
+            - component.update: epaper
+          else:
+            - logger.log:
+                level: DEBUG
+                format: "Frame unchanged (304), panel left alone"
+    on_error:
+      # Leave the previous image on the panel. A stale frame is better than a
+      # blank one, and the renderer itself draws an error page when its data
+      # sources fail -- so a wrong-looking frame is diagnostic either way.
+      - logger.log:
+          level: WARN
+          format: "Frame download failed, keeping previous image"
+
+display:
+  # `epaper_spi`, not `waveshare_epaper`. The older component still works, but
+  # it is frozen -- upstream: "the 'waveshare_epaper' component is deprecated
+  # and no new models will be added to it". Three things this one does better
+  # for this build specifically:
+  #
+  #   * it ends every update POWER_OFF -> DEEP_SLEEP, which is what Waveshare's
+  #     own manual asks for ("set the e-paper screen to sleep mode, or power
+  #     off ... to prolong the life"). waveshare_epaper only powers off.
+  #   * the busy pin is waited on by a state machine instead of a blocking
+  #     loop, which on a single-core C3 sharing the CPU with WiFi is the
+  #     difference between a slow refresh and a watchdog reset.
+  #   * its frame buffer is a split_buffer, allocated as several small blocks
+  #     rather than one 48 kB contiguous one. On a no-PSRAM C3 that single
+  #     allocation is the one most likely to fail after a few days of uptime.
+  #
+  # Needs ESPHome >= 2026.9.0, which added the UC8179 mono driver.
+  - platform: epaper_spi
+    id: epaper
+    model: waveshare-7.5in-v2
+    cs_pin: GPIO2
+    dc_pin: GPIO3
+    reset_pin: GPIO5
+    busy_pin:
+      number: GPIO4
+      # REQUIRED for this panel. ESPHome's docs warn that the 7.50in V2 models
+      # need the BUSY pin inverted to avoid permanently damaging the display.
+      # This is the setting the TRMNL firmware's bb_epaper driver hard-codes the
+      # other way, and the reason this config exists.
+      inverted: true
+    # Every update is a full refresh. Partial refresh on this panel accumulates
+    # ghosting that only a full refresh clears, and at a five-minute cadence
+    # there is nothing to gain by avoiding one.
+    full_update_every: 1
+    # The image's on_download_finished drives refreshes; nothing else should.
+    update_interval: never
+    # No `rotation:` here even when the frame hangs portrait. The renderer
+    # composes at 480x800 and rotates the bitmap into this native 800x480
+    # buffer before sending it, so the device blits it straight down. Rotating
+    # on a C3 would mean transforming 384000 pixels per refresh to arrive at
+    # the same picture.
+    lambda: |-
+      it.image(0, 0, id(frame_image), Color::BLACK, Color::WHITE);
+
+binary_sensor:
+  # BOOT button: fetch now instead of waiting out the interval. Handy when
+  # iterating on the layout -- where the picture has changed by definition, so
+  # the 304 gate never gets in the way. To repaint the panel without fetching
+  # (clearing ghosting, say), use the "Repaint panel" button below.
+  - platform: gpio
+    name: Refresh button
+    pin:
+      number: GPIO9
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      - logger.log: "Manual refresh"
+      - component.update: frame_image
+
+button:
+  - platform: template
+    name: Refresh frame
+    on_press:
+      - component.update: frame_image
+
+  - platform: template
+    name: Repaint panel
+    # Redraws whatever is already in the image buffer, no download and no
+    # conditional request -- the one way to force pixels onto the panel when
+    # the renderer keeps answering 304.
+    on_press:
+      - component.update: epaper
+
+  - platform: restart
+    name: Restart
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi signal
+    update_interval: 120s
+
+  - platform: uptime
+    name: Uptime

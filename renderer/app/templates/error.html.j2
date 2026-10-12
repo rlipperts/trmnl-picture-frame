@@ -1,0 +1,15 @@
+{% extends "base.html.j2" %}
+
+{% block body %}
+{# Rendered instead of the dashboard when a data source fails, so the panel on
+   the wall says what broke rather than showing yesterday's weather as if it
+   were today's. #}
+<div class="frame">
+  <div class="error">
+    <h1>Frame renderer error</h1>
+    <p>{{ summary }}</p>
+    <pre>{{ detail }}</pre>
+    <p>{{ updated }}</p>
+  </div>
+</div>
+{% endblock %}
