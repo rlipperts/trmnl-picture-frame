@@ -21,6 +21,11 @@ display:
     bottom: 0
     left: 0
 
+  # Set to true to put the calibration ruler on the frame itself: /frame.bmp
+  # then serves the ruler instead of the dashboard. Press the device's BOOT
+  # button to fetch it at once, read off the rings, and set this back to false.
+  calibrate: false
+
   # threshold -> hard black/white cut, keeps text razor sharp (recommended)
   # floyd     -> Floyd-Steinberg dithering, use only for photo-ish content
   dither: threshold

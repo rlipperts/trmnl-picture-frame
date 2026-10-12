@@ -152,16 +152,18 @@ the hourly strip the height that the wide layout spends on a second column.
 
 This is the part that used to be painful and is now a two-minute job.
 
-1. Point the device at the calibration image. Either temporarily set
-   `frame_url` in `esphome/frame.yaml` to `.../calibrate.bmp` and re-flash, or
-   just open `/calibrate.png` and compare against the panel in the frame.
+1. Put the ruler on the panel: set `display.calibrate: true` in `config.yaml`
+   and press the device's BOOT button, which fetches at once instead of waiting
+   out the five-minute poll. While the switch is on, `/frame.bmp` serves the
+   ruler instead of the dashboard, so nothing on the device changes.
 2. The page draws nested rings every 10 px, each labelled in the top-left and
    bottom-right corners. Read off, per edge, the innermost ring the mat still
    hides.
 3. Put those four numbers into `safe_area` in `config/config.yaml`.
-4. Refresh `/`. The layout reflows inside the visible area -- it does not shift
-   content off the panel, because everything is laid out with grid and flex
-   against that inset rather than placed at absolute positions.
+4. Set `calibrate` back to `false` and press BOOT again. The layout reflows
+   inside the visible area -- it does not shift content off the panel, because
+   everything is laid out with grid and flex against that inset rather than
+   placed at absolute positions.
 
 If a whole corner is missing rather than an edge strip, the panel is sitting
 skewed in the frame and no amount of inset will fix it.

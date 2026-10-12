@@ -231,6 +231,10 @@ def build_view(config: Config) -> dict:
 def render_frame_html(preview: bool) -> str:
     """The dashboard, or an error page carrying the reason it could not render."""
     config = load_config()
+    if config.display.calibrate:
+        # The device only knows one URL. Swapping the picture here is what lets
+        # the ruler reach the panel without re-flashing a different frame_url.
+        return render_calibrate_html(preview)
     try:
         view = build_view(config)
     except Exception as exc:

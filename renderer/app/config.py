@@ -35,6 +35,9 @@ class Display(BaseModel):
     # buffer and never learns the frame is sideways.
     rotate: Literal[0, 90, 180, 270] = 0
     safe_area: SafeArea = Field(default_factory=SafeArea)
+    # While true, the frame endpoints serve the calibration ruler instead of
+    # the dashboard, so the device shows it without being pointed elsewhere.
+    calibrate: bool = False
     dither: Literal["threshold", "floyd"] = "threshold"
     threshold: int = 128
 
