@@ -11,6 +11,12 @@ one question worth asking on the way out the door:
 
 ## To do
 
+- [ ] **Refresh on a Home Assistant state change.** The device polls every
+      five minutes, so a change reaches the panel up to five minutes late.
+      Planned: an HA automation that presses the device's "Refresh frame"
+      button when the rows change -- after the renderer's
+      `cache.states_seconds` has run out, and no more often than the 180 s
+      Waveshare asks for between refreshes. Needs writing up in the docs.
 - [ ] **Weather cache ignores a location change.** The cache keys in
       `renderer/app/weather.py` do not include the coordinates, so after
       editing `location:` the old station keeps showing for up to
