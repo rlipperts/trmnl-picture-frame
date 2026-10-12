@@ -30,8 +30,11 @@ id -u frame >/dev/null 2>&1 || useradd --system --home "$APP_DIR" --shell /usr/s
 
 say "Fetching the code"
 if [ -d "$APP_DIR/.git" ]; then
-    git -C "$APP_DIR" fetch --quiet origin "$BRANCH"
-    git -C "$APP_DIR" reset --quiet --hard "origin/$BRANCH"
+    # The checkout belongs to the service user after the first install, and git
+    # refuses to operate as root on a repository someone else owns unless told
+    # this one is expected.
+    git -c safe.directory="$APP_DIR" -C "$APP_DIR" fetch --quiet origin "$BRANCH"
+    git -c safe.directory="$APP_DIR" -C "$APP_DIR" reset --quiet --hard "origin/$BRANCH"
 else
     rm -rf "$APP_DIR"
     git clone --quiet --branch "$BRANCH" --depth 1 "$REPO_URL" "$APP_DIR"
@@ -68,7 +71,10 @@ chown -R frame:frame "$APP_DIR"
 say "Installing the service"
 install -m 644 "$APP_DIR/deploy/frame-renderer.service" /etc/systemd/system/frame-renderer.service
 systemctl daemon-reload
-systemctl enable --quiet --now frame-renderer.service
+systemctl enable --quiet frame-renderer.service
+# restart, not start: on an update the service is already running the old code,
+# and starting a running unit is a no-op.
+systemctl restart frame-renderer.service
 
 say "Waiting for it to answer"
 for _ in $(seq 1 30); do
