@@ -84,6 +84,10 @@ outlive the process.
 
 ## Afterwards
 
+The container is created without a root password, so its console login prompt
+cannot be passed. Get in from the node with `pct enter <ctid>`, or run single
+commands with `pct exec` as below.
+
 ```sh
 pct exec <ctid> -- nano /etc/frame-renderer/config.yaml   # coordinates, windows, entities
 pct exec <ctid> -- nano /etc/frame-renderer/env           # HA_TOKEN=...
@@ -103,11 +107,14 @@ frame_url: "http://<container-ip>:8080/frame.bmp"
 ## Updating
 
 ```sh
-pct exec <ctid> -- /root/install-in-container.sh
+pct exec <ctid> -- /opt/frame-renderer/deploy/install-in-container.sh
 ```
 
 Pulls the latest `main`, reinstalls requirements, restarts the service. Your
 config and token are untouched -- that is why they live outside the checkout.
+
+Run the copy in the checkout, as above, not the one the first install left in
+`/root`: that one is a snapshot from install day and never updates.
 
 ## When it goes wrong
 

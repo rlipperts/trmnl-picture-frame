@@ -20,6 +20,15 @@ source .venv/bin/activate.fish   # bash/zsh: source .venv/bin/activate
 pip install esphome
 ```
 
+Or install nothing and prefix every `esphome` command below with `uvx`:
+
+```sh
+uvx --python 3.12 esphome run frame.yaml
+```
+
+Pinning the Python version matters on a distribution that already ships the
+newest one: the PlatformIO toolchain underneath ESPHome lags a release behind.
+
 Also set `frame_url` in `frame.yaml` to wherever the renderer is listening.
 
 ## First flash (over USB)
@@ -35,9 +44,16 @@ Then:
 esphome run frame.yaml
 ```
 
-Pick the USB device when prompted (typically `/dev/ttyACM0`). After the first
-successful flash, every later change goes over the air and the cable can stay in
-the drawer:
+Pick the USB device when prompted (typically `/dev/ttyACM0`).
+
+If the upload succeeds and the output then stops at `Starting log output`, the
+chip is still sitting in the bootloader: the automatic reset does not reliably
+start the new firmware over the C3's native USB. **Tap RST once**, without
+BOOT. The log viewer reports `Serial port closed!` as the port re-enumerates --
+that is expected, and `esphome logs frame.yaml` reattaches.
+
+After the first successful flash, every later change goes over the air and the
+cable can stay in the drawer:
 
 ```sh
 esphome run frame.yaml --device <device-ip-or-name>.local

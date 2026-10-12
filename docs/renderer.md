@@ -252,7 +252,9 @@ and a number that claims otherwise is a confident guess dressed up as data.
 What stays is the one verdict a forecast genuinely settles better than a
 person looking out of a window -- whether it is going to rain during the ride.
 
-**Home Assistant.** One `GET /api/states/<entity>` per configured row. Entities
+**Home Assistant.** One `GET /api/states/<entity>` per configured row, or a
+single one when [`rows_entity`](#letting-home-assistant-decide-the-home-rows)
+is set. Entities
 reporting `unavailable` or `unknown` render as `?` with a marker on the leading
 edge, rather than as "closed" -- showing a window as shut in exactly the case
 where the data is missing is the one failure worth designing against.

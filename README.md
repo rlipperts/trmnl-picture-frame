@@ -14,12 +14,12 @@ one question worth asking on the way out the door:
 The ESP32 downloads one 1-bit BMP over HTTP and blits it. That is all it does.
 No layout, no fonts, no drawing primitives, no deep sleep.
 
-Everything that decides what the frame *looks* like lives in a small Docker
-service that renders HTML and CSS in a headless Chromium and flattens the
-screenshot to one bit per pixel:
+Everything that decides what the frame *looks* like lives in a small service
+that renders HTML and CSS in a headless Chromium and flattens the screenshot to
+one bit per pixel:
 
 ```
-Proxmox host ── frame-renderer (Docker, :8080)
+Proxmox host ── frame-renderer (LXC or Docker, :8080)
                   ├─ Home Assistant states   REST API + long-lived token
                   ├─ DWD weather             Bright Sky (no API key)
                   ├─ Jinja2 + CSS grid       ← the layout lives here
@@ -54,7 +54,7 @@ spent painting pixels that are already there.
 ## Repo layout
 
 ```
-renderer/               the Docker service: HTML/CSS → 1-bit BMP
+renderer/               the service: HTML/CSS → 1-bit BMP
   app/templates/        frame.html.j2, calibrate.html.j2, icons.html.j2
   app/static/style.css  all of the visual design
   app/weather.py        Bright Sky / DWD client
@@ -109,10 +109,19 @@ First flash needs the bootloader: **hold BOOT, tap RST, release BOOT.**
 
 **3. The picture frame mat**
 
-The frame covers the outer edge of the panel. `/calibrate` draws labelled rings
-every 10 px; read off the innermost ring each edge still hides, put those four
-numbers in `safe_area`, and the layout reflows inside the visible area. Full
-procedure in [docs/renderer.md](docs/renderer.md).
+The frame covers the outer edge of the panel. Set `display.calibrate: true` in
+the renderer's config and press the device's BOOT button: the panel shows
+labelled rings every 10 px. Read off the innermost ring each edge still hides,
+put those four numbers in `safe_area`, set `calibrate` back to `false`, and the
+layout reflows inside the visible area. Full procedure in
+[docs/renderer.md](docs/renderer.md).
+
+**4. What the HOME panel shows**
+
+Either list entities under `status:` in the renderer's config, or let Home
+Assistant compose the rows: point `home_assistant.rows_entity` at a template
+sensor and edit the panel from HA from then on. See
+[docs/renderer.md](docs/renderer.md#letting-home-assistant-decide-the-home-rows).
 
 ## Why not the things we tried first
 

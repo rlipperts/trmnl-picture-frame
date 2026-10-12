@@ -160,6 +160,6 @@ Then point the device at it -- in esphome/frame.yaml:
 Useful later:
 
     pct exec $CTID -- journalctl -u frame-renderer -f     # logs
-    pct exec $CTID -- /root/install-in-container.sh       # update to latest main
+    pct exec $CTID -- /opt/frame-renderer/deploy/install-in-container.sh   # update to latest main
 
 DONE
