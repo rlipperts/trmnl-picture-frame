@@ -9,6 +9,25 @@ one question worth asking on the way out the door:
 
 ![the frame](docs/frame-example.png)
 
+## To do
+
+- [ ] **Weather cache ignores a location change.** The cache keys in
+      `renderer/app/weather.py` do not include the coordinates, so after
+      editing `location:` the old station keeps showing for up to
+      `cache.weather_seconds`. Workaround: restart the service.
+- [ ] **No tests.** `next_outing` rolling over to tomorrow, the
+      `If-None-Match` parsing and the `rows_entity` parsing are all cheap to
+      cover and all break the frame quietly.
+- [ ] **Installer update path is unproven.** The fixes for re-running
+      `install-in-container.sh` on an existing container (repository
+      ownership, restart instead of start) have not yet been through a full
+      update on a real one.
+- [ ] **Only the HOME rows come from Home Assistant.** The same `rows_entity`
+      mechanism could feed extra verdict chips or a panel title.
+- [ ] **Repository name.** Still `trmnl-picture-frame` from the abandoned
+      TRMNL attempt; a rename means updating the URLs in `deploy/` and the
+      docs.
+
 ## The idea: a dumb device and a smart server
 
 The ESP32 downloads one 1-bit BMP over HTTP and blits it. That is all it does.
