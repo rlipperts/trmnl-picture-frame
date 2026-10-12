@@ -257,6 +257,53 @@ reporting `unavailable` or `unknown` render as `?` with a marker on the leading
 edge, rather than as "closed" -- showing a window as shut in exactly the case
 where the data is missing is the one failure worth designing against.
 
+## Letting Home Assistant decide the HOME rows
+
+The `status:` list fixes the rows in `config.yaml`: which entities, and two
+words each. To edit the panel from Home Assistant instead, have HA compose the
+finished rows and point the renderer at them:
+
+```yaml
+home_assistant:
+  rows_entity: sensor.frame_rows
+```
+
+The entity's **`rows` attribute** must be a list; its state is ignored. It has
+to be an attribute because a state is capped at 255 characters. A template
+sensor does it:
+
+```yaml
+template:
+  - sensor:
+      - name: Frame rows
+        unique_id: frame_rows
+        state: "ok"
+        attributes:
+          rows: >
+            {{ [
+              {'label': 'Lights', 'icon': 'bulb',
+               'text': 'ON' if is_state('light.living_room', 'on') else 'off',
+               'alert': is_state('light.living_room', 'on')},
+              {'label': 'Front door', 'icon': 'door',
+               'text': 'OPEN' if is_state('binary_sensor.front_door', 'on') else 'closed',
+               'alert': is_state('binary_sensor.front_door', 'on')}
+            ] }}
+```
+
+| Key | Meaning |
+|-----|---------|
+| `label` | Left-hand text. Required; a row without one is skipped. |
+| `text` | Right-hand text, free-form. |
+| `icon` | One of the names in `app/templates/icons.html.j2` (`bulb`, `window`, `door`, `droplet`, `thermometer`, `bike`, ...). Anything else draws a dot. |
+| `alert` | `true` draws the row in its emphasised state. |
+
+Rows are whatever the template yields, so it can filter -- list only the
+windows that are open -- and an empty list is a valid answer that shows no
+rows. If the entity cannot be read at all, the `status:` list is used instead,
+so a typo in a template does not blank the panel. The usual caveat about
+[refreshing only on change](#refreshing-only-on-change) applies: a row showing
+a value that changes every minute repaints the panel every poll.
+
 ## When something breaks
 
 A data-source failure renders an error page *to the panel*, carrying the

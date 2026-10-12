@@ -84,6 +84,10 @@ class HomeAssistant(BaseModel):
     base_url: str
     token: str | None = None
     timeout_seconds: float = 8.0
+    # An entity whose `rows` attribute is the finished list of HOME rows. When
+    # set and readable, it replaces the `status:` list below, so what the panel
+    # shows is edited in Home Assistant rather than in this file.
+    rows_entity: str | None = None
 
 
 class StatusRow(BaseModel):

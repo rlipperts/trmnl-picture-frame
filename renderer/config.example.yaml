@@ -68,6 +68,14 @@ home_assistant:
   token: null
   timeout_seconds: 8
 
+  # Optional: let Home Assistant decide what the HOME panel shows. Name an
+  # entity whose `rows` attribute is a list of
+  #   {label: ..., text: ..., icon: ..., alert: true|false}
+  # and it replaces the `status:` list below. See docs/renderer.md for a
+  # template sensor that produces it. `status:` stays as the fallback while
+  # that entity cannot be read.
+  # rows_entity: sensor.frame_rows
+
 # Each row is one line in the "HOME" panel. `on_states` lists the states that
 # count as the alert condition; anything else renders as the calm state.
 status:
