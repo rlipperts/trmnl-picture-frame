@@ -122,7 +122,8 @@ trap 'rm -f "$INNER"' EXIT
 # when it was piped in from the internet -- where BASH_SOURCE is "bash" rather
 # than a path, so there is nothing to sit next to.
 SELF_DIR=""
-[ -f "${BASH_SOURCE[0]}" ] && SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SELF="${BASH_SOURCE[0]:-}"
+[ -n "$SELF" ] && [ -f "$SELF" ] && SELF_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 if [ -n "$SELF_DIR" ] && [ -f "$SELF_DIR/install-in-container.sh" ]; then
     cp "$SELF_DIR/install-in-container.sh" "$INNER"
 else
